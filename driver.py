@@ -23,6 +23,7 @@ for imagePath in imagePaths:
 	image = cv2.imread(imagePath)
 	image = imutils.resize(image, width=600)
 	(lpText, lpCnt) = anpr.find_and_ocr(image, psm=args["psm"],clearBorder=args["clear_border"] > 0)
+	#Display a bounding box on the image with the identified alphanumeric text
 	if lpText is not None and lpCnt is not None:
 		box = cv2.boxPoints(cv2.minAreaRect(lpCnt))
 		box = box.astype("int")

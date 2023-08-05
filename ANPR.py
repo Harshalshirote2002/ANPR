@@ -18,9 +18,7 @@ class ANPR:
 				cv2.waitKey(0)
 
 	def locate_license_plate_candidates(self, gray, keep=5):
-		# perform a blackhat morphological operation that will allow
-		# us to reveal dark regions (i.e., text) on light backgrounds
-		# (i.e., the license plate itself)
+		#Blackhat Operation
 		rectKern = cv2.getStructuringElement(cv2.MORPH_RECT, (13, 5))
 		blackhat = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, rectKern)
 		self.debug_imshow("Blackhat", blackhat)
@@ -30,8 +28,6 @@ class ANPR:
 		light = cv2.threshold(light, 0, 255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 		self.debug_imshow("Light Regions", light)
 		# compute the Scharr gradient representation of the blackhat
-		# image in the x-direction and then scale the result back to
-		# the range [0, 255]
 		gradX = cv2.Sobel(blackhat, ddepth=cv2.CV_32F,dx=1, dy=0, ksize=-1)
 		gradX = np.absolute(gradX)
 		(minVal, maxVal) = (np.min(gradX), np.max(gradX))
