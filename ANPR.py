@@ -34,26 +34,21 @@ class ANPR:
 		gradX = 255 * ((gradX - minVal) / (maxVal - minVal))
 		gradX = gradX.astype("uint8")
 		self.debug_imshow("Scharr", gradX)
-		# blur the gradient representation, applying a closing
-		# operation, and threshold the image using Otsu's method
+		# blur the gradient representation, applying a closing operation, and threshold the image using Otsu's method
 		gradX = cv2.GaussianBlur(gradX, (5, 5), 0)
 		gradX = cv2.morphologyEx(gradX, cv2.MORPH_CLOSE, rectKern)
 		thresh = cv2.threshold(gradX, 0, 255,cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 		self.debug_imshow("Grad Thresh", thresh)
-		# perform a series of erosions and dilations to clean up the
-		# thresholded image
+		# perform a series of erosions and dilations to clean up the thresholded image
 		thresh = cv2.erode(thresh, None, iterations=2)
 		thresh = cv2.dilate(thresh, None, iterations=2)
 		self.debug_imshow("Grad Erode/Dilate", thresh)
-		# take the bitwise AND between the threshold result and the
-		# light regions of the image
+		# take the bitwise AND between the threshold result and the light regions of the image
 		thresh = cv2.bitwise_and(thresh, thresh, mask=light)
 		thresh = cv2.dilate(thresh, None, iterations=2)
 		thresh = cv2.erode(thresh, None, iterations=1)
 		self.debug_imshow("Final", thresh, waitKey=True)
-		# find contours in the thresholded image and sort them by
-		# their size in descending order, keeping only the largest
-		# ones
+		# find contours in the thresholded image and sort them by their size in descending order, keeping only the largest ones
 		cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
 		cnts = imutils.grab_contours(cnts)
 		cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:keep]
@@ -66,31 +61,23 @@ class ANPR:
 		roi = None
 		# loop over the license plate candidate contours
 		for c in candidates:
-			# compute the bounding box of the contour and then use
-			# the bounding box to derive the aspect ratio
+			# compute the bounding box of the contour and then use the bounding box to derive the aspect ratio
 			(x, y, w, h) = cv2.boundingRect(c)
 			ar = w / float(h)
 			# check to see if the aspect ratio is rectangular
 			if ar >= self.minAR and ar <= self.maxAR:
-				# store the license plate contour and extract the
-				# license plate from the grayscale image and then
-				# threshold it
+				# store the license plate contour and extract the license plate from the grayscale image and then threshold it
 				lpCnt = c
 				licensePlate = gray[y:y + h, x:x + w]
 				roi = cv2.threshold(licensePlate, 0, 255,cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-				# check to see if we should clear any foreground
-				# pixels touching the border of the image
-				# (which typically, not but always, indicates noise)
+				# check to see if we should clear any foreground pixels touching the border of the image
 				if clearBorder:
 					roi = clear_border(roi)
 					# display any debugging information and then break
-					# from the loop early since we have found the license
-					# plate region
 					self.debug_imshow("License Plate", licensePlate)
 					self.debug_imshow("ROI", roi, waitKey=True)
 					break
 		# return a 2-tuple of the license plate ROI and the contour
-		# associated with it
 		return (roi, lpCnt)
 
 	def build_tesseract_options(self, psm=7):
@@ -105,19 +92,15 @@ class ANPR:
 	def find_and_ocr(self, image, psm=7, clearBorder=False):
 		# initialize the license plate text
 		lpText = None
-		# convert the input image to grayscale, locate all candidate
-		# license plate regions in the image, and then process the
-		# candidates, leaving us with the *actual* license plate
+		# convert the input image to grayscale, locate all candidate license plate regions in the image, and then process the candidates
 		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		candidates = self.locate_license_plate_candidates(gray)
 		(lp, lpCnt) = self.locate_license_plate(gray, candidates,clearBorder=clearBorder)
-		# only OCR the license plate if the license plate ROI is not
-		# empty
+		# only OCR the license plate if the license plate ROI is not empty
 		if lp is not None:
 			# OCR the license plate
 			options = self.build_tesseract_options(psm=psm)
 			lpText = pytesseract.image_to_string(lp, config=options)
 			self.debug_imshow("License Plate", lp)
-			# return a 2-tuple of the OCR'd license plate text along with
-			# the contour associated with the license plate region
+			# return a 2-tuple of the OCR'd license plate text along with the contour 
 		return (lpText, lpCnt)
